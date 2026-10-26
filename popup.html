@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>标签管理器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 320px;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            overflow: hidden; /* 防止出现滚动条 */
+            position: relative;
+        }
+
+        /* 动态背景装饰 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, transparent 60%);
+            animation: rotate 20s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 顶部 */
+        .header {
+            padding: 24px 20px 16px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 13px;
+            opacity: 0.85;
+        }
+
+        /* 统计区域 */
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .stat-item {
+            text-align: center;
+            flex: 1;
+        }
+
+        .stat-number {
+            font-size: 26px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        /* 操作按钮区域 */
+        .actions {
+            flex: 1;
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            padding: 14px 20px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            color: white;
+            font-size: 14px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .action-btn:active {
+            transform: translateY(0);
+        }
+
+        .action-btn .icon {
+            font-size: 18px;
+            margin-right: 12px;
+            width: 24px;
+            text-align: center;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
+        }
+
+        .action-btn .text {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .action-btn .arrow {
+            opacity: 0.6;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        .action-btn:hover .arrow {
+            opacity: 1;
+            transform: translateX(4px);
+        }
+
+        /* 快捷操作行 */
+        .quick-actions {
+            display: flex;
+            flex-wrap: wrap; /* 允许换行 */
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .quick-btn {
+            flex: 1;
+            min-width: 45%; /* 保证一行最多放两个或三个 */
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: white;
+            font-size: 13px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .quick-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .quick-btn:active {
+            transform: translateY(0);
+        }
+
+        /* 底部 */
+        .footer {
+            padding: 14px 20px;
+            text-align: center;
+            font-size: 12px;
+            opacity: 0.6;
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        /* Modal 对话框 */
+        .modal {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal.visible {
+            display: flex;
+            animation: fadeIn 0.2s ease forwards;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            width: 100%;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .modal-header {
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-close {
+            background: none; border: none; color: white;
+            font-size: 20px; cursor: pointer; opacity: 0.7;
+        }
+        .modal-close:hover { opacity: 1; }
+
+        .modal textarea {
+            width: 100%;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            resize: none;
+            outline: none;
+        }
+        .modal textarea::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: rgba(255, 255, 255, 0.9); color: #667eea; }
+        .btn-primary:hover { background: #fff; }
+        .btn-secondary { background: rgba(255, 255, 255, 0.15); color: white; border: 1px solid rgba(255,255,255,0.2); }
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.25); }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* 隐藏文件输入 */
+        #importFileInput {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📑 标签管理器</h1>
+            <p>智能管理您的浏览器标签页</p>
+        </div>
+
+        <div class="stats" id="stats">
+            <div class="loading">正在加载统计信息...</div>
+        </div>
+
+        <div class="actions">
+            <button class="action-btn" id="openManager">
+                <span class="icon">📋</span>
+                <span class="text">打开标签管理器</span>
+                <span class="arrow">→</span>
+            </button>
+
+            <button class="action-btn" id="openSidepanel">
+                <span class="icon">📐</span>
+                <span class="text">打开右侧面板</span>
+                <span class="arrow">→</span>
+            </button>
+
+            <button class="action-btn" id="groupTabs">
+                <span class="icon">📁</span>
+                <span class="text">按域名分组标签</span>
+                <span class="arrow">→</span>
+            </button>
+
+            <button class="action-btn" id="closeOthers">
+                <span class="icon">🗑️</span>
+                <span class="text">关闭其他标签</span>
+                <span class="arrow">→</span>
+            </button>
+
+            <button class="action-btn" id="refreshAll">
+                <span class="icon">🔄</span>
+                <span class="text">刷新所有标签</span>
+                <span class="arrow">→</span>
+            </button>
+
+            <div class="quick-actions">
+                <button class="quick-btn" id="bookmarkAll">📌 收藏全部</button>
+                <button class="quick-btn" id="exportTabs">📤 导出</button>
+                <button class="quick-btn" id="importTabs">📥 导入</button>
+                <button class="quick-btn" id="batchOpenBtn">🔗 批量打开</button>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>智能标签页管理器 v2.0 · Alt+T 快速打开</p>
+        </div>
+    </div>
+
+    <!-- 批量打开弹窗 -->
+    <div id="batchOpenModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>批量打开标签页</span>
+                <button class="modal-close" id="closeBatchModal">✕</button>
+            </div>
+            <textarea id="batchUrlsInput" placeholder="请输入链接，一行一个..."></textarea>
+            <div class="modal-actions">
+                <button class="modal-btn btn-secondary" id="readClipboardBtn">剪贴板读取</button>
+                <button class="modal-btn btn-primary" id="confirmBatchOpenBtn">打开链接</button>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="importFileInput" accept=".json">
+    <script src="popup.js"></script>
+</body>
+</html>
